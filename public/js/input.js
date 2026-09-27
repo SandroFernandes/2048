@@ -35,7 +35,7 @@ export function bindKeyboard(handlers) {
     const direction = KEY_DIRECTIONS[event.key];
     if (direction) {
       event.preventDefault();
-      if (!event.repeat || direction) handlers.move(direction);
+      handlers.move(direction);
       return;
     }
     if (event.key === 'u' || event.key === 'U') { handlers.undo(); return; }
