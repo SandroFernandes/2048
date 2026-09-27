@@ -3,7 +3,7 @@
  * turns a game state (plus an optional move result) into tile elements.
  */
 
-const SUPER_THRESHOLD = 8192;
+const SUPER_THRESHOLD = 65536;
 
 export function prefersReducedMotion() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

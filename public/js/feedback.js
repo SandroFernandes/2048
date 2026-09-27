@@ -35,10 +35,12 @@ export function createSound() {
 
   return {
     get enabled() { return enabled; },
-    /** Must be called from a user gesture the first time so browsers allow audio. */
+    /** The audio context is created lazily on the first tone, which always follows a user gesture. */
     setEnabled(value) {
       enabled = Boolean(value);
-      if (enabled) context();
+    },
+    preview() {
+      if (enabled) tone(523.25, 0.14, { gain: 0.05 });
     },
     move() {
       if (enabled) tone(196, 0.07, { type: 'triangle', gain: 0.025 });

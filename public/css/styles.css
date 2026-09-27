@@ -58,11 +58,11 @@
     --danger-soft: #3a1f22;
     --focus: #8fb4ff;
     --board: #1f2f37;
-    --cell: rgb(255 255 255 / 0.05);
+    --cell: rgb(0 0 0 / 0.2);
     --overlay: rgb(15 23 29 / 0.84);
-    --t2-bg: #2c3e47;
-    --t2-fg: #e3eef0;
-    --t4-bg: #34525a;
+    --t2-bg: #3d535e;
+    --t2-fg: #eef5f6;
+    --t4-bg: #4b6d70;
     --t4-fg: #eef8f6;
     --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -8px rgb(0 0 0 / 0.5);
@@ -87,11 +87,11 @@
   --danger-soft: #3a1f22;
   --focus: #8fb4ff;
   --board: #1f2f37;
-  --cell: rgb(255 255 255 / 0.05);
+  --cell: rgb(0 0 0 / 0.2);
   --overlay: rgb(15 23 29 / 0.84);
-  --t2-bg: #2c3e47;
-  --t2-fg: #e3eef0;
-  --t4-bg: #34525a;
+  --t2-bg: #3d535e;
+  --t2-fg: #eef5f6;
+  --t4-bg: #4b6d70;
   --t4-fg: #eef8f6;
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 32px -8px rgb(0 0 0 / 0.5);
@@ -100,6 +100,8 @@
 
 /* ---------- Base ---------- */
 *, *::before, *::after { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -434,6 +436,9 @@ button.chip:hover { background: var(--surface); }
 .tile-inner[data-v="1024"] { --tile-bg: #b84b83; --tile-fg: #ffffff; }
 .tile-inner[data-v="2048"] { --tile-bg: #7249bf; --tile-fg: #ffffff; }
 .tile-inner[data-v="4096"] { --tile-bg: #33296f; --tile-fg: #ffe3a3; box-shadow: var(--tile-shadow), 0 0 0 2px #e7c46a inset; }
+.tile-inner[data-v="8192"]  { --tile-bg: #1d2f5e; --tile-fg: #ffe3a3; box-shadow: var(--tile-shadow), 0 0 0 2px #e7c46a inset; }
+.tile-inner[data-v="16384"] { --tile-bg: #3d1d52; --tile-fg: #ffd6ec; box-shadow: var(--tile-shadow), 0 0 0 2px #e6a3c9 inset; }
+.tile-inner[data-v="32768"] { --tile-bg: #0e3b3a; --tile-fg: #c4f6ea; box-shadow: var(--tile-shadow), 0 0 0 2px #6fd3c0 inset; }
 .tile-inner[data-v="super"] { --tile-bg: #141327; --tile-fg: #f1c56d; box-shadow: var(--tile-shadow), 0 0 0 2px #f1c56d inset; }
 
 /* The selected target tile gets a subtle ring in addition to its number. */
@@ -547,7 +552,7 @@ button.chip:hover { background: var(--surface); }
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
 }
-.sheet-compact { width: min(400px, calc(100% - 24px)); }
+.sheet-compact { width: min(460px, calc(100% - 24px)); }
 
 @keyframes sheet-in {
   from { opacity: 0; transform: translateY(12px) scale(0.98); }
@@ -709,6 +714,7 @@ button.chip:hover { background: var(--surface); }
 .confirm-actions { display: flex; flex-direction: column-reverse; gap: 8px; margin-top: 4px; }
 @media (min-width: 420px) {
   .confirm-actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; }
+  .confirm-actions .btn { padding-inline: 14px; }
 }
 
 /* ---------- Toast ---------- */
@@ -733,7 +739,25 @@ button.chip:hover { background: var(--surface); }
 }
 .toast[hidden] { display: none; }
 
+/* ---------- Offline fallback page ---------- */
+.offline-page {
+  min-height: 80vh;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  max-width: 420px;
+}
+.offline-page h1 { margin: 8px 0 0; font-size: 1.8rem; }
+.offline-page p { margin: 0; color: var(--muted); line-height: 1.5; }
+.offline-mark { width: 72px; height: 72px; border-radius: 18px; }
+a.btn { text-decoration: none; }
+
 /* ---------- Responsive ---------- */
+@media (max-width: 520px) {
+  .actions { width: 100%; }
+  .actions .btn { flex: 1; }
+}
+
 @media (max-width: 380px) {
   body { padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
   .app { gap: 12px; }

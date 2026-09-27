@@ -1,0 +1,89 @@
+/*
+ * Tessera service worker.
+ *
+ * Precaches every local asset so the game works fully offline after the first
+ * load. Bump VERSION whenever a cached file changes; the new worker installs
+ * alongside the old one and old caches are deleted on activation. Saved games
+ * live in localStorage, which is never touched here.
+ */
+const VERSION = '1.0.0';
+const CACHE_PREFIX = 'tessera-';
+const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
+
+const PRECACHE = [
+  './',
+  './index.html',
+  './offline.html',
+  './manifest.webmanifest',
+  './css/styles.css',
+  './js/app.js',
+  './js/feedback.js',
+  './js/game.js',
+  './js/input.js',
+  './js/pwa.js',
+  './js/render.js',
+  './js/storage.js',
+  './icons/icon.svg',
+  './icons/favicon-32.png',
+  './icons/apple-touch-icon.png',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/maskable-192.png',
+  './icons/maskable-512.png',
+];
+
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' })))),
+  );
+  // No skipWaiting() here: the page asks for it, so an update never swaps
+  // code underneath a game in progress without the player's consent.
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+      .map((key) => caches.delete(key)));
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+});
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      try {
+        return await fetch(request);
+      } catch {
+        const scopePath = new URL(self.registration.scope).pathname;
+        if (url.pathname === scopePath) {
+          const shell = await cache.match('./index.html');
+          if (shell) return shell;
+        }
+        return (await cache.match('./offline.html')) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    return fetch(request);
+  })());
+});
