@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+  <title>Tessera — Sliding Number Puzzle</title>
+  <meta name="description" content="A calm, ad-free sliding and merging number puzzle that works fully offline.">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#e9efee" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f171d" media="(prefers-color-scheme: dark)">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Tessera">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" sizes="180x180">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#board">Skip to the board</a>
+
+  <div class="app">
+    <header class="topbar">
+      <h1 class="brand">
+        <img class="brand-mark" src="icons/icon.svg" alt="" width="36" height="36">
+        <span>Tessera</span>
+      </h1>
+      <div class="topbar-actions">
+        <button class="icon-btn" type="button" id="help-btn" aria-label="How to play" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.25"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.5"/><circle class="fill" cx="12" cy="16.9" r="1.05"/></svg>
+        </button>
+        <button class="icon-btn" type="button" id="settings-btn" aria-label="Settings" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="scoreboard" aria-label="Scores">
+      <div class="score-card">
+        <span class="score-label" id="score-label">Score</span>
+        <output class="score-value" id="score" aria-labelledby="score-label">0</output>
+        <span class="score-delta" id="score-delta" aria-hidden="true"></span>
+      </div>
+      <div class="score-card">
+        <span class="score-label" id="best-label">Best</span>
+        <output class="score-value" id="best" aria-labelledby="best-label">0</output>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="Game controls">
+      <div class="chips">
+        <button class="chip" type="button" id="size-chip" aria-label="Grid size 4 by 4. Change in settings.">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 4v16M4 12h16"/></svg>
+          <span id="size-chip-text">4 × 4</span>
+        </button>
+        <button class="chip" type="button" id="target-chip" aria-label="Target 2048. Change in settings.">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle class="fill" cx="12" cy="12" r="1.2"/></svg>
+          <span id="target-chip-text">Target 2048</span>
+        </button>
+        <span class="chip chip-status" id="endless-chip" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 9a3 3 0 1 0 0 6c2.5 0 4.5-6 7-6a3 3 0 1 1 0 6c-2.5 0-4.5-6-7-6Z"/></svg>
+          <span>Endless</span>
+        </span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" type="button" id="undo-btn" aria-keyshortcuts="Control+Z Meta+Z U">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4.5 11.5 9 16"/><path d="M5 11.5h9a5 5 0 0 1 0 10h-2"/></svg>
+          <span>Undo</span>
+        </button>
+        <button class="btn btn-primary" type="button" id="new-btn" aria-keyshortcuts="N">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          <span>New game</span>
+        </button>
+      </div>
+    </section>
+
+    <main class="stage">
+      <div class="board" id="board" tabindex="0" role="application"
+           aria-roledescription="puzzle board" aria-label="Puzzle board, 4 by 4"
+           aria-describedby="board-help board-desc">
+        <div class="board-cells" id="board-cells" aria-hidden="true"></div>
+        <div class="board-tiles" id="board-tiles" aria-hidden="true"></div>
+
+        <div class="overlay" id="overlay" hidden>
+          <div class="overlay-card" role="group" aria-labelledby="overlay-title" aria-describedby="overlay-text">
+            <div class="overlay-badge" id="overlay-badge" aria-hidden="true"></div>
+            <h2 class="overlay-title" id="overlay-title"></h2>
+            <p class="overlay-text" id="overlay-text"></p>
+            <div class="overlay-actions" id="overlay-actions"></div>
+          </div>
+        </div>
+      </div>
+      <p class="sr-only" id="board-help">Use the arrow keys or W, A, S, D to slide every tile. Press U to undo.</p>
+      <p class="sr-only" id="board-desc"></p>
+    </main>
+
+    <p class="hint" id="hint">
+      <span class="hint-touch">Swipe on the board to slide the tiles.</span>
+      <span class="hint-keys">Use <kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd> or <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to slide, <kbd>U</kbd> to undo.</span>
+    </p>
+  </div>
+
+  <div class="sr-only" id="announcer" aria-live="polite" aria-atomic="true"></div>
+  <div class="sr-only" id="alert" role="status" aria-live="assertive" aria-atomic="true"></div>
+
+  <div class="toast" id="toast" role="status" hidden>
+    <span id="toast-text">A new version is ready.</span>
+    <button class="btn btn-small btn-primary" type="button" id="toast-action">Update</button>
+    <button class="icon-btn icon-btn-small" type="button" id="toast-close" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+    </button>
+  </div>
+
+  <!-- Settings -->
+  <dialog class="sheet" id="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="sheet-inner" id="settings-form">
+      <header class="sheet-header">
+        <h2 id="settings-title">Settings</h2>
+        <button class="icon-btn" value="close" aria-label="Close settings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+        </button>
+      </header>
+
+      <fieldset class="field">
+        <legend>Target tile</legend>
+        <div class="segmented" id="target-options">
+          <label class="seg"><input type="radio" name="target" value="1024"><span>1024</span></label>
+          <label class="seg"><input type="radio" name="target" value="2048"><span>2048</span></label>
+          <label class="seg"><input type="radio" name="target" value="4096"><span>4096</span></label>
+        </div>
+        <p class="field-note">Changing the target keeps your current board.</p>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Grid size</legend>
+        <div class="segmented" id="size-options">
+          <label class="seg"><input type="radio" name="size" value="3"><span>3 × 3</span></label>
+          <label class="seg"><input type="radio" name="size" value="4"><span>4 × 4</span></label>
+          <label class="seg"><input type="radio" name="size" value="5"><span>5 × 5</span></label>
+          <label class="seg"><input type="radio" name="size" value="6"><span>6 × 6</span></label>
+        </div>
+        <p class="field-note">A new grid size starts a new game.</p>
+      </fieldset>
+
+      <fieldset class="field">
+        <legend>Theme</legend>
+        <div class="segmented" id="theme-options">
+          <label class="seg"><input type="radio" name="theme" value="auto"><span>Auto</span></label>
+          <label class="seg"><input type="radio" name="theme" value="light"><span>Light</span></label>
+          <label class="seg"><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        </div>
+      </fieldset>
+
+      <div class="field toggles">
+        <label class="toggle">
+          <span class="toggle-text">
+            <span class="toggle-title">Sound</span>
+            <span class="toggle-desc">Soft tones for moves and merges</span>
+          </span>
+          <input type="checkbox" role="switch" id="sound-toggle">
+        </label>
+        <label class="toggle">
+          <span class="toggle-text">
+            <span class="toggle-title">Vibration</span>
+            <span class="toggle-desc" id="vibration-desc">Subtle haptic feedback on merges</span>
+          </span>
+          <input type="checkbox" role="switch" id="vibration-toggle" aria-describedby="vibration-desc">
+        </label>
+      </div>
+
+      <div class="field danger-zone">
+        <button class="btn btn-danger" type="button" id="reset-btn">Reset all data</button>
+        <p class="field-note">Erases the current game, best scores and preferences on this device.</p>
+      </div>
+
+      <p class="privacy-note">No ads, no tracking, no accounts. Everything stays on this device.</p>
+    </form>
+  </dialog>
+
+  <!-- Help -->
+  <dialog class="sheet" id="help-dialog" aria-labelledby="help-title">
+    <form method="dialog" class="sheet-inner">
+      <header class="sheet-header">
+        <h2 id="help-title">How to play</h2>
+        <button class="icon-btn" value="close" aria-label="Close instructions">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+        </button>
+      </header>
+      <ol class="how-to">
+        <li><strong>Slide.</strong> Swipe on the board, or press the arrow keys or <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>. Every tile slides as far as it can in that direction.</li>
+        <li><strong>Merge.</strong> Two tiles with the same number combine into one tile with their sum. A tile can merge only once per move, so a row of <em>2 2 2 2</em> slid left becomes <em>4 4</em>.</li>
+        <li><strong>Grow.</strong> After every move that changes the board, a new 2 (or occasionally a 4) appears in an empty cell.</li>
+        <li><strong>Score.</strong> Each merge adds the value of the new tile to your score.</li>
+        <li><strong>Win.</strong> Create the target tile (1024, 2048 or 4096). You can then keep going in Endless Mode.</li>
+        <li><strong>Game over.</strong> The game ends when the board is full and no neighbouring tiles match. You can undo your last moves.</li>
+      </ol>
+      <h3 class="help-subtitle">Shortcuts</h3>
+      <dl class="shortcuts">
+        <div><dt><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> / <kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></dt><dd>Slide tiles</dd></div>
+        <div><dt><kbd>U</kbd> or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Z</kbd></dt><dd>Undo</dd></div>
+        <div><dt><kbd>N</kbd></dt><dd>New game</dd></div>
+      </dl>
+      <p class="privacy-note">Your game is saved automatically on this device and works offline.</p>
+      <div class="sheet-footer">
+        <button class="btn btn-primary" value="close">Let’s play</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Confirmation -->
+  <dialog class="sheet sheet-compact" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+    <form method="dialog" class="sheet-inner">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-message"></p>
+      <div class="confirm-actions" id="confirm-actions"></div>
+    </form>
+  </dialog>
+</body>
+</html>
