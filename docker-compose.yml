@@ -1,0 +1,27 @@
+services:
+  # Static server for local play and testing: http://localhost:8080
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+  # yarn test
+  test:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["yarn", "test"]
+    profiles: ["tools"]
+
+  # yarn icons (regenerates public/icons/*.png)
+  icons:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: ["yarn", "icons"]
+    profiles: ["tools"]
