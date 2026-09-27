@@ -6,7 +6,7 @@
  * alongside the old one and old caches are deleted on activation. Saved games
  * live in localStorage, which is never touched here.
  */
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE_PREFIX = 'tessera-';
 const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
 
@@ -69,12 +69,13 @@ self.addEventListener('fetch', (event) => {
       try {
         return await fetch(request);
       } catch {
-        const scopePath = new URL(self.registration.scope).pathname;
-        if (url.pathname === scopePath) {
+        const scope = new URL(self.registration.scope);
+        if (url.pathname === scope.pathname) {
           const shell = await cache.match('./index.html');
           if (shell) return shell;
         }
-        return (await cache.match('./offline.html')) || Response.error();
+        // Redirect (rather than serve in place) so the fallback's relative asset URLs resolve.
+        return Response.redirect(new URL('offline.html', scope).href, 302);
       }
     })());
     return;
