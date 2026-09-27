@@ -1,0 +1,15 @@
+{
+  "name": "tessera",
+  "version": "1.0.0",
+  "description": "An ad-free, offline sliding-number puzzle PWA.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "icons": "node scripts/generate-icons.mjs"
+  }
+}
