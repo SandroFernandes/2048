@@ -6,7 +6,7 @@
  * alongside the old one and old caches are deleted on activation. Saved games
  * live in localStorage, which is never touched here.
  */
-const VERSION = '1.0.3';
+const VERSION = '1.0.4';
 const CACHE_PREFIX = 'tessera-';
 const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
 
