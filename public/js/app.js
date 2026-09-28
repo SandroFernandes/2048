@@ -441,13 +441,7 @@ function init() {
   renderAll();
   persist();
 
-  registerServiceWorker({
-    onUpdateReady(apply) {
-      ui.toastText.textContent = 'A new version is ready.';
-      ui.toast.hidden = false;
-      ui.toastAction.onclick = () => { ui.toast.hidden = true; apply(); };
-    },
-  });
+  registerServiceWorker();
 
   if (firstVisit) ui.helpDialog.showModal();
 }

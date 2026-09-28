@@ -6,7 +6,7 @@
  * alongside the old one and old caches are deleted on activation. Saved games
  * live in localStorage, which is never touched here.
  */
-const VERSION = '1.0.2';
+const VERSION = '1.0.3';
 const CACHE_PREFIX = 'tessera-';
 const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
 
@@ -37,8 +37,9 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME).then((cache) =>
       cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' })))),
   );
-  // No skipWaiting() here: the page asks for it, so an update never swaps
-  // code underneath a game in progress without the player's consent.
+  // Activate immediately so nobody gets stuck on an old version. Safe because
+  // saved games live in localStorage and every move is saved as it happens.
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
