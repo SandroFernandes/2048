@@ -306,6 +306,7 @@ async function onTargetChange(target) {
   if (target === state.target) return;
   if (!isInProgress(state)) {
     applyTarget(target);
+    revealBoard();
     return;
   }
   const choice = await confirmDialog({
@@ -320,6 +321,13 @@ async function onTargetChange(target) {
   if (choice === 'keep') applyTarget(target);
   else if (choice === 'new') startNewGame({ target });
   syncSettingsForm();
+  if (choice === 'keep' || choice === 'new') revealBoard();
+}
+
+/** Closes settings so the changed board is visible instead of hidden behind the backdrop. */
+function revealBoard() {
+  if (ui.settingsDialog.open) ui.settingsDialog.close();
+  ui.board.focus({ preventScroll: true });
 }
 
 async function onSizeChange(size) {
@@ -337,6 +345,7 @@ async function onSizeChange(size) {
   }
   startNewGame({ size });
   syncSettingsForm();
+  revealBoard();
 }
 
 async function onReset() {

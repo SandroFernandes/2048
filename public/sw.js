@@ -6,7 +6,7 @@
  * alongside the old one and old caches are deleted on activation. Saved games
  * live in localStorage, which is never touched here.
  */
-const VERSION = '1.0.1';
+const VERSION = '1.0.2';
 const CACHE_PREFIX = 'tessera-';
 const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
 
@@ -61,14 +61,18 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  // Network first so a running copy never gets stuck on stale code while online;
+  // the cache (kept fresh with every successful response) serves offline play.
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(request, { ignoreSearch: true });
-      if (cached) return cached;
       try {
-        return await fetch(request);
+        const response = await fetch(request);
+        if (response.ok) cache.put(request, response.clone());
+        return response;
       } catch {
+        const cached = await cache.match(request, { ignoreSearch: true });
+        if (cached) return cached;
         const scope = new URL(self.registration.scope);
         if (url.pathname === scope.pathname) {
           const shell = await cache.match('./index.html');
@@ -83,8 +87,14 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request, { ignoreSearch: true });
-    if (cached) return cached;
-    return fetch(request);
+    try {
+      const response = await fetch(request);
+      if (response.ok) cache.put(request, response.clone());
+      return response;
+    } catch (error) {
+      const cached = await cache.match(request, { ignoreSearch: true });
+      if (cached) return cached;
+      throw error;
+    }
   })());
 });
