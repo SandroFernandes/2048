@@ -2,13 +2,16 @@
  * Tessera service worker.
  *
  * Precaches every local asset so the game works fully offline after the first
- * load. Bump VERSION whenever a cached file changes; the new worker installs
- * alongside the old one and old caches are deleted on activation. Saved games
- * live in localStorage, which is never touched here.
+ * load. The phone opens that saved copy immediately, so the Mac and Docker can
+ * be off. A short background check refreshes the copy only when NetBird
+ * actually answers. Bump VERSION whenever a cached file changes; old caches
+ * are deleted on activation. Saved games live in localStorage, which is never
+ * touched here.
  */
-const VERSION = '1.0.4';
+const VERSION = '1.0.5';
 const CACHE_PREFIX = 'tessera-';
 const CACHE_NAME = `${CACHE_PREFIX}${VERSION}`;
+const REFRESH_MS = 2500;
 
 const PRECACHE = [
   './',
@@ -62,40 +65,62 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network first so a running copy never gets stuck on stale code while online;
-  // the cache (kept fresh with every successful response) serves offline play.
-  if (request.mode === 'navigate') {
-    event.respondWith((async () => {
-      const cache = await caches.open(CACHE_NAME);
-      try {
-        const response = await fetch(request);
-        if (response.ok) cache.put(request, response.clone());
-        return response;
-      } catch {
-        const cached = await cache.match(request, { ignoreSearch: true });
-        if (cached) return cached;
-        const scope = new URL(self.registration.scope);
-        if (url.pathname === scope.pathname) {
-          const shell = await cache.match('./index.html');
-          if (shell) return shell;
-        }
-        // Redirect (rather than serve in place) so the fallback's relative asset URLs resolve.
-        return Response.redirect(new URL('offline.html', scope).href, 302);
-      }
-    })());
-    return;
-  }
-
-  event.respondWith((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    try {
-      const response = await fetch(request);
-      if (response.ok) cache.put(request, response.clone());
-      return response;
-    } catch (error) {
-      const cached = await cache.match(request, { ignoreSearch: true });
-      if (cached) return cached;
-      throw error;
-    }
-  })());
+  event.respondWith(fromCache(request));
+  event.waitUntil(refreshIfCached(request));
 });
+
+async function fromCache(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    await remember(cache, request, response);
+    return response;
+  } catch {
+    if (request.mode !== 'navigate') return Response.error();
+    const shell = await cache.match('./index.html');
+    if (shell) return shell;
+    return Response.redirect(new URL('offline.html', self.registration.scope).href, 302);
+  }
+}
+
+async function refreshIfCached(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request, { ignoreSearch: true });
+  if (cached) await refresh(cache, request);
+}
+
+/** Asks the Mac for a newer copy, but gives up quickly when it is off. */
+function refresh(cache, request) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REFRESH_MS);
+  return fetch(request, { cache: 'no-store', signal: controller.signal })
+    .then((response) => remember(cache, request, response))
+    .catch(() => {})
+    .finally(() => clearTimeout(timer));
+}
+
+/**
+ * Stores a response only when it is the real app. A NetBird login page is a
+ * successful HTML response too, and must not replace the cached game.
+ */
+async function remember(cache, request, response) {
+  if (!response || !response.ok || response.type !== 'basic' || response.redirected) return;
+  const type = (response.headers.get('content-type') || '').toLowerCase();
+  const path = new URL(request.url).pathname;
+  if (path.endsWith('.js') && !type.includes('javascript')) return;
+  if (path.endsWith('.css') && !type.includes('css')) return;
+  if ((path.endsWith('.png') || path.endsWith('.svg')) && !type.includes('image/')) return;
+  if (path.endsWith('.webmanifest') && !type.includes('json') && !type.includes('manifest')) return;
+  if (request.mode === 'navigate' || path.endsWith('.html') || path.endsWith('/')) {
+    if (!type.includes('text/html')) return;
+    const text = await response.clone().text();
+    if (!text.includes('id="board"') && !text.includes('offline-page')) return;
+  }
+  try {
+    await cache.put(request, response.clone());
+  } catch {
+    /* A redirected or opaque response cannot be stored. */
+  }
+}
